@@ -5,7 +5,7 @@ import discord
 import json
 
 # Constants
-Key = "NzI5ODkzODcxNzY0NTA0Njg3.XwPqBw.53Wy4gBWGUPFYt1RKhRgPW0FiAI"
+Key = ""
 
 # Variable
 prefix = "$"
