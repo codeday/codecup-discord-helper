@@ -1,0 +1,1 @@
+# codecup-discord-helper
