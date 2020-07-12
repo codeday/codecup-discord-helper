@@ -1,8 +1,6 @@
 # Logs in to CTFd
-import re
-
 import requests
-
+import re
 
 def login(username, password, url, session=requests.session()):
     """Logs in at the specified url with the given username and password, returns a valid, logged in session object"""

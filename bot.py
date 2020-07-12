@@ -10,10 +10,12 @@ import sys
 # Constants
 Key           = open("key.txt", "r").read()
 StatusChannel = 603079732015136768
+bot           = discord.Client()
 
-# Variables
-prefix = "$"
-bot    = discord.Client()
+# Info
+info     = list(filter(None ,(None if x.startswith("#") or x == "" else x for x in open("info.txt", "r").read().split("\n"))))
+prefix   = info[0]
+status   = info[1]
 
 # Commands
 async def Ping(message, args):
@@ -27,23 +29,29 @@ async def Help(message, args):
 async def Kill(message, args):
     await bot.close()
 
+async def Prefix(message, args):
+    Prefix = args[1]
+    await message.channel.send("Prefix is set to " + args[1])
+
 async def UpdateStatus(message, args):
     await bot.get_channel(StatusChannel).send("Status")
 
 # Command : Function
 Commands = {
-"ping" : Ping,
-"help" : Help,
-"kill" : Kill,
-"stat" : UpdateStatus,
+"ping"   : Ping,
+"help"   : Help,
+"kill"   : Kill,
+"prefix" : Prefix,
+"status" : UpdateStatus,
 }
 
 # Command : [[Aliases], "Description"]
 CommandInfo = {
-"ping" : [["latency"], "Send back the latency of the bot."],
-"help" : [["cmds, commands"], "Displays all of the commands."],
-"kill" : [["stop", "close"], "Stops the bot."],
-"stat" : [["status"], "Get the status of the game."]
+"ping"   : [["latency"], "Send back the latency of the bot."],
+"help"   : [["cmds, commands"], "Displays all of the commands."],
+"kill"   : [["stop", "close"], "Stops the bot."],
+"prefix" : [["pre"], "Set the prefix of the bot."],
+"status" : [["stats"], "Get the status of the game."],
 }
 
 # Events
@@ -59,6 +67,7 @@ async def on_message(message):
 @bot.event
 async def on_ready():
     print("Bot Running.")
+    await bot.change_presence(activity = discord.Game(name = status))
 
 # Gui Functions
 
@@ -68,4 +77,5 @@ def SetChannel(Value):
 def SetKey(Value):
     Key = Value
 
+# Run
 bot.run(Key)
