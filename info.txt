@@ -1,7 +1,0 @@
-# Info Settings
-
-# Prefix
-$
-
-# Status
-Code Cup!

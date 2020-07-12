@@ -7,15 +7,26 @@ import json
 import time
 import sys
 
-# Constants
-Key           = open("key.txt", "r").read()
-StatusChannel = 603079732015136768
-bot           = discord.Client()
+from login import login
 
 # Info
-info     = list(filter(None ,(None if x.startswith("#") or x == "" else x for x in open("info.txt", "r").read().split("\n"))))
+info     = list(filter(None ,(None if x.startswith("#") or x == "" else x for x in open("info", "r").read().split("\n"))))
 prefix   = info[0]
 status   = info[1]
+
+# Channels
+StatusChannel = info[2]
+UpdateChannel = info[3]
+
+# Credentials
+DiscordKey   = info[4]
+CTFDUsername = info[5]
+CTFDPassword = info[6]
+CTFDURL      = info[7]
+
+# API
+bot = discord.Client()
+api = login(CTFDUsername, CTFDPassword, CTFDURL)
 
 # Commands
 async def Ping(message, args):
@@ -36,7 +47,7 @@ async def Prefix(message, args):
 async def UpdateStatus(message, args):
     await bot.get_channel(StatusChannel).send("Status")
 
-# Command : Function
+# Name   : Function
 Commands = {
 "ping"   : Ping,
 "help"   : Help,
@@ -45,7 +56,7 @@ Commands = {
 "status" : UpdateStatus,
 }
 
-# Command : [[Aliases], "Description"]
+# Name   : [[Aliases], "Description"]
 CommandInfo = {
 "ping"   : [["latency"], "Send back the latency of the bot."],
 "help"   : [["cmds, commands"], "Displays all of the commands."],
@@ -69,13 +80,5 @@ async def on_ready():
     print("Bot Running.")
     await bot.change_presence(activity = discord.Game(name = status))
 
-# Gui Functions
-
-def SetChannel(Value):
-    StatusChannel = Value
-
-def SetKey(Value):
-    Key = Value
-
 # Run
-bot.run(Key)
+bot.run(DiscordKey)
