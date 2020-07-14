@@ -5,8 +5,10 @@ import discord
 import json
 import time
 import sys
+import random
 
 from login import login
+
 
 # Settings
 info = []
@@ -33,6 +35,8 @@ CTFDURL      = info[7]
 # API
 bot = discord.Client()
 api = login(CTFDUsername, CTFDPassword, CTFDURL)
+
+## Discord Bot ##
 
 # Commands
 async def Ping(message, args):
@@ -76,4 +80,22 @@ async def on_ready():
     await bot.change_presence(activity = discord.Game(name = status + " Prefix : " + prefix))
 
 # Run
-bot.run(DiscordKey)
+#bot.run(DiscordKey)
+
+## Api Handling ##
+
+# Questions
+challenges = json.loads(api.get("https://playcodecup.com/api/v1/challenges").text)
+questions = challenges["data"]
+
+# Solves
+def GetSolves(questionid : int = 0, name = ""):
+	if name != "":
+		# Might be process heavy
+		for i in questions:
+			if i["name"] == name:
+				questionid = i["id"]
+	if questionid != 0:
+		return len(json.loads(api.get("https://playcodecup.com/api/v1/challenges/"+str(questionid)+"/solves").text)["data"])
+
+#threding.Thred(target = )
