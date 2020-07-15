@@ -6,6 +6,8 @@ import json
 import time
 import sys
 import random
+import threading
+import time
 
 from login import login
 
@@ -86,7 +88,7 @@ async def on_ready():
 
 # Questions
 challenges = json.loads(api.get("https://playcodecup.com/api/v1/challenges").text)
-questions = challenges["data"]
+questions  = challenges["data"]
 
 # Solves
 def GetSolves(questionid : int = 0, name = ""):
@@ -98,4 +100,14 @@ def GetSolves(questionid : int = 0, name = ""):
 	if questionid != 0:
 		return len(json.loads(api.get("https://playcodecup.com/api/v1/challenges/"+str(questionid)+"/solves").text)["data"])
 
-#threding.Thred(target = )
+def UpdateSolves():
+    while True:
+        solves = {}
+        for i in questions:
+            solves[i["id"]] = GetSolves(i["id"])
+        solves = sorted(solves.items(), key = lambda x : x[1])
+        zeros  = list(filter(None, (x[0] if x[1] == 0 else None for x in solves)))
+        print(zeros)
+        time.sleep(1)
+
+threading.Thread(target = UpdateSolves).start()
