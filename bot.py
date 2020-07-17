@@ -97,17 +97,37 @@ def GetSolves(questionid : int = 0, name = ""):
 		for i in questions:
 			if i["name"] == name:
 				questionid = i["id"]
+
 	if questionid != 0:
-		return len(json.loads(api.get("https://playcodecup.com/api/v1/challenges/"+str(questionid)+"/solves").text)["data"])
+		return len(json.loads(api.get("https://playcodecup.com/api/v1/challenges/" + str(questionid) + "/solves").text)["data"])
 
 def UpdateSolves():
+    global challenges, questions
     while True:
+        time.sleep(3)
+        
+        challenges = json.loads(api.get("https://playcodecup.com/api/v1/challenges").text)
+        questions  = challenges["data"]
+
         solves = {}
         for i in questions:
             solves[i["id"]] = GetSolves(i["id"])
+        
         solves = sorted(solves.items(), key = lambda x : x[1])
         zeros  = list(filter(None, (x[0] if x[1] == 0 else None for x in solves)))
         print(zeros)
-        time.sleep(1)
 
+        upgrade = random.choice(zeros)
+        for i in questions:
+            print(i["id"])
+            if i["id"] == upgrade:
+                print(i)
+                upgrade = i
+                break
+        
+        if type(upgrade) == int: continue
+        print("*")
+        api.patch("https://playcodecup.com/api/v1/challenges/" + str(upgrade["id"]), {"value" : upgrade["value"] + random.randint(1,3) * 10})
+        print(json.loads(api.get("https://playcodecup.com/api/v1/challenges/" + str(upgrade["id"])).text)["data"])
+        
 threading.Thread(target = UpdateSolves).start()
