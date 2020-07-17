@@ -45,44 +45,46 @@ async def Ping(message, args):
     await message.channel.send(bot.latency)
 
 async def Help(message, args):
-    Display = ""
-    Display = "```" + Display.join(x + " : " + CommandInfo[x][1] + "\n" for x in Commands.keys()) + "```"
+    if len(args) >= 1 and Commands.get(args[0]) != None:
+        Display = args[0] + " : " + CommandInfo[args[0]][1] + " : " + CommandInfo[args[0]][2]
+    else:
+        Display = ""
+        Display = "```" + Display.join(x + " : " + CommandInfo[x][1] + " : " + CommandInfo[x][2]  + "\n" for x in Commands.keys()) + "```"
     await message.channel.send(Display)
-
-async def UpdateStatus(message, args):
-    await bot.get_channel(UpdateChannel).send("Status")
 
 # Name   : Function
 Commands = {
 "ping"   : Ping,
 "help"   : Help,
-"status" : UpdateStatus,
+"leader" : Leaderboard,
+"info"   : Info
 }
 
-# Name   : [[Aliases], Requires Admin, "Description"]
+# Name   : [[Aliases], Requires Admin, "Description", "Arguments", Arguments Required]
 CommandInfo = {
-"ping"   : [["latency"], "Send back the latency of the bot."],
-"help"   : [["cmds", "commands"], "Displays all of the commands."],
-"status" : [["stats"], "Get the status of the game."],
+"ping"   : [["latency"], "Send back the latency of the bot.", "No arguments eequired.", 0],
+"help"   : [["cmds", "commands"], "Displays all of the commands.", "cmd (Optional)", 0],
+"leader" : [["leaderboard"], "Displays the leaderboard.", "scope = `teams` / `users`", 1],
+"info"   : [["stat"], "Displays infomation on a team or user.", "name", 1],
 }
 
 # Events
 @bot.event
 async def on_message(message):
-    if message.content.startswith(prefix) and message.channel == CommandChannel:
+    #and message.channel.id == CommandChannel
+    if message.content.startswith(prefix):
         content = message.content[len(prefix):]
         for i in Commands.keys():
             if content.startswith(i) or any(content.startswith(x) for x in CommandInfo[i][0]):
-                args = content[len(i):].split(" ")
+                args = content[len(i):].split(" ")[1:]
+                #if len(args) < CommandInfo[i][3]: 
+                    #return
                 await Commands[i](message, args)
 
 @bot.event
 async def on_ready():
     print("Bot Running.")
     await bot.change_presence(activity = discord.Game(name = status + " Prefix : " + prefix))
-
-# Run
-#bot.run(DiscordKey)
 
 ## Api Handling ##
 
@@ -91,7 +93,7 @@ challenges = json.loads(api.get("https://playcodecup.com/api/v1/challenges").tex
 questions  = challenges["data"]
 
 # Solves
-def GetSolves(questionid : int = 0, name = ""):
+def GetSolves(questionid : int = 0, name : str = ""):
 	if name != "":
 		# Might be process heavy
 		for i in questions:
@@ -100,6 +102,25 @@ def GetSolves(questionid : int = 0, name = ""):
 
 	if questionid != 0:
 		return len(json.loads(api.get("https://playcodecup.com/api/v1/challenges/" + str(questionid) + "/solves").text)["data"])
+
+def GetInfo(returntype : str, scope : str):
+    leader = json.loads(api.get("https://playcodecup.com/api/v1/scoreboard").text)["data"]
+    if returntype == "leaderboard":
+        if scope == "teams":
+            leader = "Top Ten Teams \n" + "\n".join(list(x["name"] + " : " + str(x["score"]) for x in leader[:9]))
+        elif scope == "users":
+            users = []
+            for x in leader:
+                for y in x["members"]:
+                    users.append(y)
+            leader = sorted(users, key = lambda x : x["score"])
+            leader.reverse()
+            leader = "Top Ten Users \n" + "\n".join(list(x["name"] + " : " + str(x["score"]) for x in leader[:9]))
+        else:
+            leader = prefix+"help leader"
+    elif returntype == "info":
+        print()
+    return leader
 
 def UpdateSolves():
     global challenges, questions
@@ -126,8 +147,11 @@ def UpdateSolves():
                 break
         
         if type(upgrade) == int: continue
-        print("*")
-        api.patch("https://playcodecup.com/api/v1/challenges/" + str(upgrade["id"]), {"value" : upgrade["value"] + random.randint(1,3) * 10})
-        print(json.loads(api.get("https://playcodecup.com/api/v1/challenges/" + str(upgrade["id"])).text)["data"])
-        
-threading.Thread(target = UpdateSolves).start()
+        print("\n\n")
+        print(api.patch("https://playcodecup.com/api/v1/challenges/" + str(upgrade["id"]), data = {"data" : {"value" : upgrade["value"] + random.randint(1,3) * 10}}).text)
+        print("\n\n")
+        print(json.loads(api.get("https://playcodecup.com/api/v1/challenges/" + str(upgrade["id"]))))
+
+# Run
+bot.run(DiscordKey)
+#threading.Thread(target = UpdateSolves).start()
