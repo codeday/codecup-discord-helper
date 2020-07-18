@@ -8,9 +8,9 @@ import sys
 import random
 import threading
 import time
+import requests
 
 from login import login
-
 
 # Settings
 info = []
@@ -38,6 +38,8 @@ CTFDURL      = info[7]
 bot = discord.Client()
 api = login(CTFDUsername, CTFDPassword, CTFDURL)
 
+Session = requests.session()
+
 ## Discord Bot ##
 
 # Commands
@@ -56,8 +58,6 @@ async def Help(message, args):
 Commands = {
 "ping"   : Ping,
 "help"   : Help,
-"leader" : Leaderboard,
-"info"   : Info
 }
 
 # Name   : [[Aliases], Requires Admin, "Description", "Arguments", Arguments Required]
@@ -92,7 +92,7 @@ async def on_ready():
 challenges = json.loads(api.get("https://playcodecup.com/api/v1/challenges").text)
 questions  = challenges["data"]
 
-# Solves
+# Api Functions
 def GetSolves(questionid : int = 0, name : str = ""):
 	if name != "":
 		# Might be process heavy
@@ -122,6 +122,18 @@ def GetInfo(returntype : str, scope : str):
         print()
     return leader
 
+
+def CreateTeam(name : str):
+    teams = json.loads(api.get("https://playcodecup.com/api/v1/teams").text)["data"]
+    for i in teams:
+        if i["name"] == name:
+            return "There is already a team with the name : " + name + "."
+    data = {
+        "name" : name,
+    }
+    newteam = json.loads(api.post("https://playcodecup.com/api/v1/teams", data = data).text)
+    return "Created Team : " + name + "."
+
 def UpdateSolves():
     global challenges, questions
     while True:
@@ -140,18 +152,22 @@ def UpdateSolves():
 
         upgrade = random.choice(zeros)
         for i in questions:
-            print(i["id"])
             if i["id"] == upgrade:
-                print(i)
                 upgrade = i
                 break
         
         if type(upgrade) == int: continue
-        print("\n\n")
-        print(api.patch("https://playcodecup.com/api/v1/challenges/" + str(upgrade["id"]), data = {"data" : {"value" : upgrade["value"] + random.randint(1,3) * 10}}).text)
-        print("\n\n")
-        print(json.loads(api.get("https://playcodecup.com/api/v1/challenges/" + str(upgrade["id"]))))
+        print(upgrade)
+        data = {
+            "value" : upgrade["value"] + random.randint(1,3) * 10,
+        }
+        print("https://playcodecup.com/api/v1/challenges/" + str(upgrade["id"]))
+        Res = api.patch("https://playcodecup.com/api/v1/challenges/" + str(upgrade["id"]), data = data)
+        print(json.loads(api.get("https://playcodecup.com/api/v1/challenges/" + str(upgrade["id"])).text))
 
 # Run
-bot.run(DiscordKey)
+#bot.run(DiscordKey)
 #threading.Thread(target = UpdateSolves).start()
+print(CreateTeam("t"))
+teams = json.loads(api.get("https://playcodecup.com/api/v1/teams").text)["data"]
+print(teams)
