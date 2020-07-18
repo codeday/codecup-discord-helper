@@ -12,5 +12,7 @@ def login(username, password, url, session=requests.session()):
         'password': password,
         'nonce': nonce
     }
-    session.post('https://playcodecup.com/login', data=payload)
+    csrf_ex = re.compile(r'''.*'csrfNonce': "([^"]*)"*''', flags=re.DOTALL)
+    csrf = csrf_ex.match(session.post('https://playcodecup.com/login', data=payload).text).groups(1)[0]
+    session.headers.update({'CSRF-Token':csrf})
     return session
