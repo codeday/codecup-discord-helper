@@ -4,7 +4,6 @@
 import discord
 import json
 import time
-import sys
 import random
 import threading
 import time
@@ -93,48 +92,113 @@ challenges = json.loads(api.get("https://playcodecup.com/api/v1/challenges").tex
 questions  = challenges["data"]
 
 # Api Functions
-def GetSolves(questionid : int = 0, name : str = ""):
+def getSolves(questionid : int = 0, name : str = ""):
 	if name != "":
 		# Might be process heavy
 		for i in questions:
 			if i["name"] == name:
 				questionid = i["id"]
-
 	if questionid != 0:
 		return len(json.loads(api.get("https://playcodecup.com/api/v1/challenges/" + str(questionid) + "/solves").text)["data"])
 
-def GetInfo(returntype : str, scope : str):
-    leader = json.loads(api.get("https://playcodecup.com/api/v1/scoreboard").text)["data"]
-    if returntype == "leaderboard":
-        if scope == "teams":
-            leader = "Top Ten Teams \n" + "\n".join(list(x["name"] + " : " + str(x["score"]) for x in leader[:9]))
-        elif scope == "users":
-            users = []
-            for x in leader:
-                for y in x["members"]:
-                    users.append(y)
-            leader = sorted(users, key = lambda x : x["score"])
-            leader.reverse()
-            leader = "Top Ten Users \n" + "\n".join(list(x["name"] + " : " + str(x["score"]) for x in leader[:9]))
+def getLeaderboard(scope : str):
+    teams = json.loads(api.get("https://playcodecup.com/api/v1/scoreboard").text)["data"]
+    message = ""
+    if scope == "teams":
+        message = sorted(teams, key = lambda x : x["score"])
+        message.reverse()
+        message = "Top Ten Teams \n" + "\n".join(list(x["name"] + " : " + str(x["score"]) for x in message[:10]))
+    elif scope == "users":
+        users = []
+        for x in teams:
+            for y in x["members"]:
+                users.append(y)
+        message = sorted(users, key = lambda x : x["score"])
+        message.reverse()
+        message = "Top Ten Users \n" + "\n".join(list(x["name"] + " : " + str(x["score"]) for x in message[:10]))
+    else:
+        message = "Incorrect use of command."
+    return message
+
+def getInfo(scope : str, name : str = "", page : int = 0):
+    teams = json.loads(api.get("https://playcodecup.com/api/v1/scoreboard").text)["data"]
+    message = ""
+    if scope == "teams":
+        if name == "":
+            message = "All Teams, Page : " + str(page) + " \n" + "\n".join(x["name"] for x in teams[10 * page:10 * page + 10])
         else:
-            leader = prefix+"help leader"
-    elif returntype == "info":
-        print()
-    return leader
+            team = False
+            for i in teams:
+                if i["name"] == name:
+                    team = i
+            if team:
+                data = {
+                    "name" : team["name"],
+                    "id" : team["account_id"],
+                    "position" : team["pos"],
+                    "score" : team["score"],
+                    "members" : len(team["members"])
+                }
+                message = "Info about the team : `" + team["name"]  + "`. \n" + "\n".join(x[0] +  ":" + str(x[1]) for x in data.items())
+            else:
+                message = "`" + name + "` is not a valid team."
+    elif scope == "users":
+        users = []
+        for x in teams:
+            for y in x["members"]:
+                users.append(y)
+        if name == "":
+            message = "All Users, Page : " + str(page) + " \n" + "\n".join(x["name"] for x in users[10 * page:10 * page + 10])
+        else:
+            user = False
+            for i in users:
+                if i["name"] == name:
+                    user = i
+            if user:
+                data = {
+                    "name" : user["name"],
+                    "id" : user["id"],
+                    "score" : user["score"],
+                }
+                message = "Info about the user : `" + user["name"]  + "`. \n" + "\n".join(x[0] +  ":" + str(x[1]) for x in data.items())
+            else:
+                message = "`" + name + "` is not a valid user."
+    else:
+        message = "Incorrect use of command."
+    return message
 
 
-def CreateTeam(name : str):
+def createTeam(name : str):
     teams = json.loads(api.get("https://playcodecup.com/api/v1/teams").text)["data"]
     for i in teams:
         if i["name"] == name:
-            return "There is already a team with the name : " + name + "."
+            return "There is already a team with the name : `" + name + "`."
     data = {
         "name" : name,
     }
-    newteam = json.loads(api.post("https://playcodecup.com/api/v1/teams", data = data).text)
-    return "Created Team : " + name + "."
+    res = json.loads(api.post("https://playcodecup.com/api/v1/teams", json = data, headers = {'Content-Type':'application/json'}).text)
+    try:
+        if res["success"]:
+            return "Created Team : `" + name + "`."
+    except KeyError:
+        return "Unable to create Team."
 
-def UpdateSolves():
+def removeTeam(name : str):
+    teams = json.loads(api.get("https://playcodecup.com/api/v1/teams").text)["data"]
+    teamid = False
+    for i in teams:
+        if i["name"] == name:
+            teamid = i["id"]
+    if not teamid:
+        return "No team with name : `" + name + "` exists." 
+    res = json.loads(api.delete("https://playcodecup.com/api/v1/teams/" +  str(teamid), headers = {'Content-Type':'application/json'}).text)
+    try:
+        if res["success"]:
+            return "Removed Team : `" + name + "`."
+    except KeyError:
+        return "Unable to remove Team."
+
+def updateSolves():
     global challenges, questions
     while True:
         time.sleep(3)
@@ -144,7 +208,7 @@ def UpdateSolves():
 
         solves = {}
         for i in questions:
-            solves[i["id"]] = GetSolves(i["id"])
+            solves[i["id"]] = getSolves(i["id"])
         
         solves = sorted(solves.items(), key = lambda x : x[1])
         zeros  = list(filter(None, (x[0] if x[1] == 0 else None for x in solves)))
@@ -168,12 +232,9 @@ def UpdateSolves():
             "state": upgrade['state']
         }
         print("https://playcodecup.com/api/v1/challenges/" + str(upgrade["id"]))
-        Res = api.patch("https://playcodecup.com/api/v1/challenges/" + str(upgrade["id"]), json = data, headers={'Content-Type':'application/json'})
+        Res = api.patch("https://playcodecup.com/api/v1/challenges/" + str(upgrade["id"]), json = data, headers = {'Content-Type':'application/json'})
         print(Res.text)
 
 # Run
 #bot.run(DiscordKey)
-threading.Thread(target = UpdateSolves).start()
-#print(CreateTeam("t"))
-#teams = json.loads(api.get("https://playcodecup.com/api/v1/teams").text)["data"]
-#print(teams)
+#threading.Thread(target = UpdateSolves).start()
