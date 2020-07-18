@@ -158,16 +158,22 @@ def UpdateSolves():
         
         if type(upgrade) == int: continue
         print(upgrade)
+        upgrade = json.loads(api.get("https://playcodecup.com/api/v1/challenges/" + str(upgrade["id"])).text)["data"]
         data = {
-            "value" : upgrade["value"] + random.randint(1,3) * 10,
+            "name": upgrade['name'],
+            "category": upgrade['category'],
+            "description": upgrade['description'],
+            "value": upgrade["value"] + random.randint(1,3) * 10,
+            "max_attempts": upgrade["max_attempts"],
+            "state": upgrade['state']
         }
         print("https://playcodecup.com/api/v1/challenges/" + str(upgrade["id"]))
-        Res = api.patch("https://playcodecup.com/api/v1/challenges/" + str(upgrade["id"]), data = data)
-        print(json.loads(api.get("https://playcodecup.com/api/v1/challenges/" + str(upgrade["id"])).text))
+        Res = api.patch("https://playcodecup.com/api/v1/challenges/" + str(upgrade["id"]), json = data, headers={'Content-Type':'application/json'})
+        print(Res.text)
 
 # Run
 #bot.run(DiscordKey)
-#threading.Thread(target = UpdateSolves).start()
-print(CreateTeam("t"))
-teams = json.loads(api.get("https://playcodecup.com/api/v1/teams").text)["data"]
-print(teams)
+threading.Thread(target = UpdateSolves).start()
+#print(CreateTeam("t"))
+#teams = json.loads(api.get("https://playcodecup.com/api/v1/teams").text)["data"]
+#print(teams)
