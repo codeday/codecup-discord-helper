@@ -92,14 +92,30 @@ challenges = json.loads(api.get("https://playcodecup.com/api/v1/challenges").tex
 questions  = challenges["data"]
 
 # Api Functions
-def getSolves(questionid : int = 0, name : str = ""):
-	if name != "":
-		# Might be process heavy
-		for i in questions:
-			if i["name"] == name:
-				questionid = i["id"]
-	if questionid != 0:
-		return len(json.loads(api.get("https://playcodecup.com/api/v1/challenges/" + str(questionid) + "/solves").text)["data"])
+def getChallenge(name : str, challengeid : int = 0):
+    message = ""
+    if name != "":
+        for i in questions:
+            if i["name"] == name:
+                challengeid = i["id"]
+        if challengeid != 0:
+            data = {
+                "name" : json.loads(api.get("https://playcodecup.com/api/v1/challenges/" + str(challengeid)).text)["data"]["name"],
+                "id" : json.loads(api.get("https://playcodecup.com/api/v1/challenges/" + str(challengeid)).text)["data"]["id"],
+                "solves" : len(json.loads(api.get("https://playcodecup.com/api/v1/challenges/" + str(challengeid) + "/solves").text)["data"]),
+                "score" : json.loads(api.get("https://playcodecup.com/api/v1/challenges/" + str(challengeid)).text)["data"]["value"],
+                "description" : json.loads(api.get("https://playcodecup.com/api/v1/challenges/" + str(challengeid)).text)["data"]["description"],
+            }
+            message = "Infomation about : `" + data["name"] + "` \n" + "\n".join(x[0] +  " : " + str(x[1]) for x in data.items())
+    else:
+        message = "Challenge not found."
+    return message
+
+def getChallenges(page : int = 0):
+    teams = json.loads(api.get("https://playcodecup.com/api/v1/challenges").text)["data"]
+    message = ""
+    message = "All Challenges, Page : " + str(page) + "\n" + "\n".join(list(x["name"] + " : " + str(x["id"]) for x in teams[10 * page:10 * page + 10]))
+    return message
 
 def getLeaderboard(scope : str):
     teams = json.loads(api.get("https://playcodecup.com/api/v1/scoreboard").text)["data"]
@@ -160,13 +176,12 @@ def getInfo(scope : str, name : str = "", page : int = 0):
                     "id" : user["id"],
                     "score" : user["score"],
                 }
-                message = "Info about the user : `" + user["name"]  + "`. \n" + "\n".join(x[0] +  ":" + str(x[1]) for x in data.items())
+                message = "Info about the user : `" + user["name"]  + "`. \n" + "\n".join(x[0] +  " : " + str(x[1]) for x in data.items())
             else:
                 message = "`" + name + "` is not a valid user."
     else:
         message = "Incorrect use of command."
     return message
-
 
 def createTeam(name : str):
     teams = json.loads(api.get("https://playcodecup.com/api/v1/teams").text)["data"]
