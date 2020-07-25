@@ -54,10 +54,33 @@ async def Help(message, args):
         Display = "```" + Display.join(x + " : " + CommandInfo[x][1] + " : " + CommandInfo[x][2]  + "\n" for x in Commands.keys()) + "```"
     await message.channel.send(Display)
 
+async def Leader(message, args):
+    Display = getLeaderboard(args[0])
+    await message.channel.send(Display)
+
+async def Info(message, args):
+    if len(args) >= 2:
+        Display = getInfo(args[0], name = args[1])
+    else:
+        Display = getInfo(args[0])
+    await message.channel.send(Display)
+
+async def Team(message, args):
+    if args[0] == "create":
+        Display = createTeam(args[1])
+    elif args[0] == "remove":
+        Display = removeTeam(args[1])
+    else:
+        Display = "Incorrect use of command."
+    await message.channel.send(Display)
+
 # Name   : Function
 Commands = {
 "ping"   : Ping,
 "help"   : Help,
+"leader" : Leader,
+"info"   : Info,
+"team"   : Team,
 }
 
 # Name   : [[Aliases], Requires Admin, "Description", "Arguments", Arguments Required]
@@ -65,7 +88,8 @@ CommandInfo = {
 "ping"   : [["latency"], "Send back the latency of the bot.", "No arguments eequired.", 0],
 "help"   : [["cmds", "commands"], "Displays all of the commands.", "cmd (Optional)", 0],
 "leader" : [["leaderboard"], "Displays the leaderboard.", "scope = `teams` / `users`", 1],
-"info"   : [["stat"], "Displays infomation on a team or user.", "name", 1],
+"info"   : [["stat"], "Displays infomation on a team or user.", "scope = `teams` / `users`, name", 1],
+"team"   : [["teams"], "Creates or removes a team.", "function = `create` / `remove`, name", 2]
 }
 
 # Events
@@ -137,30 +161,40 @@ def getLeaderboard(scope : str):
     return message
 
 def getInfo(scope : str, name : str = "", page : int = 0):
-    teams = json.loads(api.get("https://playcodecup.com/api/v1/scoreboard").text)["data"]
+    teams = json.loads(api.get("https://playcodecup.com/api/v1/teams").text)["data"]
+    score = json.loads(api.get("https://playcodecup.com/api/v1/scoreboard").text)["data"]
     message = ""
     if scope == "teams":
         if name == "":
             message = "All Teams, Page : " + str(page) + " \n" + "\n".join(x["name"] for x in teams[10 * page:10 * page + 10])
         else:
             team = False
-            for i in teams:
+            for i in score:
                 if i["name"] == name:
                     team = i
-            if team:
-                data = {
-                    "name" : team["name"],
-                    "id" : team["account_id"],
-                    "position" : team["pos"],
-                    "score" : team["score"],
-                    "members" : len(team["members"])
-                }
+            for i in teams:
+                if i["name"] == name:
+                    teamt = i
+            if team or teamt:
+                data = {}
+                if team:
+                    data.update({
+                        "position" : team["pos"],
+                        "score" : team["score"],
+                        "members" : len(team["members"]),
+                    })
+                elif teamt:
+                    data.update({
+                        "name" : teamt["name"],
+                        "id" : teamt["id"],
+                        "password" : teamt["password"],
+                    })
                 message = "Info about the team : `" + team["name"]  + "`. \n" + "\n".join(x[0] +  ":" + str(x[1]) for x in data.items())
             else:
-                message = "`" + name + "` is not a valid team."
+                message = "`" + name + "` is not a valid team or it doesn't not have any members/points."
     elif scope == "users":
         users = []
-        for x in teams:
+        for x in score:
             for y in x["members"]:
                 users.append(y)
         if name == "":
@@ -188,8 +222,11 @@ def createTeam(name : str):
     for i in teams:
         if i["name"] == name:
             return "There is already a team with the name : `" + name + "`."
+    password = str(math.randint(0, 9) for i in range(10))
+    print(password)
     data = {
         "name" : name,
+        "password" : password,
     }
     if state.lower() == "active" or state.lower() == "api":
         res = json.loads(api.post("https://playcodecup.com/api/v1/teams", json = data, headers = {'Content-Type':'application/json'}).text)
@@ -274,7 +311,7 @@ def Run():
             if c == "active":
                 state = "Active"
                 threading.Thread(target = runDiscord).start()
-                threading.Thread(target = runDymanic).start()
+                #threading.Thread(target = runDymanic).start()
             elif c == "passive":
                 state = "Passive"
                 print("State set to : Passive")
