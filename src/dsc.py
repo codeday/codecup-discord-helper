@@ -1,14 +1,12 @@
 ## Discord Handling ##
 
 import discord
+import os
+
 from discord.ext.commands import Bot
 
-# Cogs
-Cogs = [
-    "src.cog_main",
-    "src.cog_info",
-    "src.cog_team",
-]
+# Api Functions
+
 
 # Run
 def runDiscord(givenbot, givenprefix, DiscordKey, status):
@@ -17,8 +15,8 @@ def runDiscord(givenbot, givenprefix, DiscordKey, status):
     bot = givenbot
     prefix = givenprefix
 
-    for cog in Cogs:
-        bot.load_extension(cog)
+    for i in ['src.cog_info', 'src.cog_main', 'src.cog_team']:
+        bot.load_extension(i)
 
     @bot.event
     async def on_ready():

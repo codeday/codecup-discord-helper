@@ -30,5 +30,13 @@ class Info(commands.Cog):
             Display = getInfo(args[0])
         await ctx.channel.send(Display)
 
+    @commands.command(name = "challenges", pass_context = True, usage = "[page]", help = "Gets all of the challenges.")
+    async def challenges(self, ctx, *args):
+        if len(args) >= 1:
+            Display = getInfo(args[0])
+        else:
+            Display = getInfo()
+        await ctx.channel.send(Display)
+
 def setup(client):
     client.add_cog(Info(client))
