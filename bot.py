@@ -43,11 +43,11 @@ def Run():
     if state.lower() == "active":
         runCTF(api)
         runDiscord(bot, prefix, DiscordKey, status)
-        #threading.Thread(target = runDymanic).start()
+        threading.Thread(target = runDymanic).start()
     if state.lower() == "passive":
         runCTF(api)
         runDiscord(bot, prefix, DiscordKey, status)
-        #threading.Thread(target = runDymanic).start()
+        threading.Thread(target = runDymanic).start()
     if state.lower() == "testing":
         c = ""
         while c != "quit":
@@ -56,7 +56,7 @@ def Run():
                 state = "Active"
                 runCTF(api)
                 runDiscord(bot, prefix, DiscordKey, status)
-                #threading.Thread(target = runDymanic).start()
+                threading.Thread(target = runDymanic).start()
             elif c == "passive":
                 state = "Passive"
                 print("State set to : Passive")
